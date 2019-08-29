@@ -1,6 +1,9 @@
+from datetime import datetime
+
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+
 from sqlalchemy.dialects.mysql import TIME
 
 
@@ -70,6 +73,16 @@ class Table(db.Model):
         return '<Table %r>' % self.title
 
 
+class Menu(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    price = db.Column(db.Float)
+
+    def __repr__(self):
+        return '<Menu %r>' % self.name
+
+
 class Restaurant(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     category_id = db.Column(db.Integer, db.ForeignKey('restaurantcategory.id'),
@@ -95,22 +108,36 @@ class Restaurant(db.Model):
 
 tables = db.Table('tags',
     db.Column('table_id', db.Integer, db.ForeignKey('table.id'), primary_key=True),
-    db.Column('booked_id', db.Integer, db.ForeignKey('booktable.id'), primary_key=True)
+    db.Column('booked_id', db.Integer, db.ForeignKey('order.id'), primary_key=True)
 )
 
 
-class BookTable(db.Model):
+class Order(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
     user_email = db.Column(db.String(120), nullable=False)
+    mobile = db.Column(db.Integer, nullable=True)
     restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurant.id'),
                             nullable=False)
     restaurant = db.relationship('Restaurant',
                                backref=db.backref('restaurant', lazy=True))
-
     tables = db.relationship('Table', secondary=tables, lazy='subquery',
-                           backref=db.backref('booked_tables', lazy=True))
-    booked_time = db.Column(db.DateTime, nullable=False,
+                           backref=db.backref('orders', lazy=True))
+    order_time = db.Column(db.DateTime, nullable=False,
         default=datetime.utcnow)
     spend_hour = db.Column(db.Integer, default=2)
+
+
+class Item(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    order_id = db.Column(db.Integer, db.ForeignKey('order.id'),
+        nullable=False)
+    order = db.relationship('Order',
+        backref=db.backref('orders', lazy=True))
+    menu_id = db.Column(db.Integer, db.ForeignKey('menu.id'),
+                            nullable=False)
+    menu = db.relationship('Menu',
+        backref=db.backref('items', lazy=True))
+    count = db.Column(db.Integer, nullable=True)                            
 
 
 
