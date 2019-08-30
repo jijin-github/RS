@@ -104,6 +104,10 @@ class Table(db.Model):
 
 class Restaurant(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    user_email = db.Column(db.String, db.ForeignKey('user.email'),
+                            nullable=False)
+    user = db.relationship('User',
+                               backref=db.backref('users', lazy=True))
     category_id = db.Column(db.Integer, db.ForeignKey('restaurant_category.id'),
                          nullable=False)
     category = db.relationship('RestaurantCategory',
@@ -127,12 +131,10 @@ class Restaurant(db.Model):
 
 class MenuItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-
     restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurant.id'),
                               nullable=False)
     items = db.relationship('Restaurant',
                                backref=db.backref('restaurant', lazy=True))
-
     name = db.Column(db.String(50), nullable=False)
     description = db.Column(db.Text, nullable=True)
     price = db.Column(db.Float)
@@ -160,7 +162,7 @@ class Order(db.Model):
     restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurant.id'),
                             nullable=False)
     restaurant = db.relationship('Restaurant',
-                               backref=db.backref('restaurant', lazy=True))
+                               backref=db.backref('restaurants', lazy=True))
     tables = db.relationship('Table', secondary=tables, lazy='subquery',
                            backref=db.backref('orders', lazy=True))
     order_time = db.Column(db.DateTime, nullable=False,
