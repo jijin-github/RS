@@ -28,7 +28,7 @@ class UserType(enum.Enum):
 class User(db.Model):
     email = db.Column(db.String, primary_key=True)
     password = db.Column(db.String)
-    mobile = db.Column(db.Integer, nullable=False)
+    mobile = db.Column(db.Integer, nullable=True)
     authenticated = db.Column(db.Boolean, default=False)
     user_type = db.Column(
         db.Enum(UserType),
@@ -89,38 +89,25 @@ class TableCategory(db.Model):
         return '<Category %r>' % self.title
 
 
-class Table(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    category_id = db.Column(db.Integer, db.ForeignKey('table_category.id'),
-                            nullable=False)
-    category = db.relationship('TableCategory',
-                               backref=db.backref('restaurant', lazy=True))
-    seat_count = db.Column(db.Integer, nullable=True)
-    count = db.Column(db.Integer, nullable=True)
-
-    def __repr__(self):
-        return '<Table %r>' % self.title
-
-
 class Restaurant(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_email = db.Column(db.String, db.ForeignKey('user.email'),
                             nullable=False)
     user = db.relationship('User',
-                               backref=db.backref('users', lazy=True))
+                               backref=db.backref('user_restaurants', lazy=True))
     category_id = db.Column(db.Integer, db.ForeignKey('restaurant_category.id'),
                          nullable=False)
     category = db.relationship('RestaurantCategory',
-                               backref=db.backref('restaurants', lazy=True))
+                               backref=db.backref('category_restaurants', lazy=True))
 
     place_id = db.Column(db.Integer, db.ForeignKey('place.id'),
                            nullable=False)
     place = db.relationship('Place',
-                               backref=db.backref('restaurants', lazy=True))
+                               backref=db.backref('place_restaurants', lazy=True))
     title = db.Column(db.String(128))
     description = db.Column(db.Text, nullable=True)
     mobile = db.Column(db.Integer, nullable=True)
-    email = db.Column(db.String(120), unique=True, nullable=False)
+    email = db.Column(db.String(120), nullable=False)
     opening_time = db.Column(TIME(), nullable=False)
     closing_time = db.Column(TIME(), nullable=False)
     active = db.Column(db.Boolean(), default=True)
@@ -129,12 +116,29 @@ class Restaurant(db.Model):
         return '<Restaurant %r>' % self.title
 
 
+class Table(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurant.id'),
+                              nullable=False)
+    tables = db.relationship('Restaurant',
+                            backref=db.backref('restaurant_tables', lazy=True))
+    category_id = db.Column(db.Integer, db.ForeignKey('table_category.id'),
+                            nullable=False)
+    category = db.relationship('TableCategory',
+                               backref=db.backref('table_catgory_tables', lazy=True))
+    seat_count = db.Column(db.Integer, nullable=True)
+    count = db.Column(db.Integer, nullable=True)
+
+    def __repr__(self):
+        return '<Table %r>' % self.id
+
+
 class MenuItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurant.id'),
                               nullable=False)
     items = db.relationship('Restaurant',
-                               backref=db.backref('restaurant', lazy=True))
+                               backref=db.backref('restaurant_items', lazy=True))
     name = db.Column(db.String(50), nullable=False)
     description = db.Column(db.Text, nullable=True)
     price = db.Column(db.Float)
@@ -149,9 +153,9 @@ class OrderStatus(enum.Enum):
     close = 'close'
 
 
-tables = db.Table('tags',
-    db.Column('table_id', db.Integer, db.ForeignKey('table.id'), primary_key=True),
-    db.Column('booked_id', db.Integer, db.ForeignKey('order.id'), primary_key=True)
+order_tables = db.Table('order_tables',
+    db.Column('table_id', db.Integer, db.ForeignKey('table.id')),
+    db.Column('booked_id', db.Integer, db.ForeignKey('order.id'))
 )
 
 
@@ -162,9 +166,9 @@ class Order(db.Model):
     restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurant.id'),
                             nullable=False)
     restaurant = db.relationship('Restaurant',
-                               backref=db.backref('restaurants', lazy=True))
-    tables = db.relationship('Table', secondary=tables, lazy='subquery',
-                           backref=db.backref('orders', lazy=True))
+                               backref=db.backref('restaurant_orders', lazy=True))
+    order_tables = db.relationship('Table', secondary=order_tables, lazy='subquery',
+                           backref=db.backref('table_orders', lazy=True))
     order_time = db.Column(db.DateTime, nullable=False,
         default=datetime.utcnow)
     spend_hour = db.Column(db.Integer, default=2)
@@ -182,11 +186,11 @@ class CartItem(db.Model):
     order_id = db.Column(db.Integer, db.ForeignKey('order.id'),
         nullable=False)
     order = db.relationship('Order',
-        backref=db.backref('orders', lazy=True))
+        backref=db.backref('order_items', lazy=True))
     menu_id = db.Column(db.Integer, db.ForeignKey('menu_item.id'),
                             nullable=False)
     menu = db.relationship('MenuItem',
-        backref=db.backref('cart_item', lazy=True))
+        backref=db.backref('menu_carts', lazy=True))
     count = db.Column(db.Integer, nullable=True)
 
 if __name__ == '__main__':
