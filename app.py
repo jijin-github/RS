@@ -363,6 +363,9 @@ class OrderView(Resource):
             result['status'] = order.status.value
             result['tables'] = [table.id for table in order.order_tables]
             result['selected_items'] = [[order.id, order.menu.name, order.count] for order in order.order_items]
+            result['get_table_price'] = order.get_table_price
+            result['get_food_price'] = order.get_food_price
+            result['get_total_amount'] = order.get_total_amount
             output.append(result)
         return output
 

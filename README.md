@@ -31,7 +31,7 @@ http://localhost:5000/estaurant-categories/ (GET)
 
 Create Table Category
 
-http://localhost:5000/table-categories?title=AC&price=500
+http://localhost:5000/table-categories?title=AC&price=500 (POST)
 http://localhost:5000/table-categories (GET)
 
 Create Restaurant

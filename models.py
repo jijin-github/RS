@@ -175,6 +175,23 @@ class Order(db.Model):
         nullable=False
     )
 
+    @property
+    def get_table_price(self):
+        table_price = sum([table.category.price for table in self.order_tables])
+        return table_price
+
+    @property
+    def get_food_price(self):
+        total_food_price = sum([item.menu.price for item in self.order_items])
+        return total_food_price
+
+    @property
+    def get_total_amount(self):
+        result = 0
+        table_price = self.get_table_price
+        get_food_price = self.get_food_price
+        return table_price + get_food_price
+
 
 class CartItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
