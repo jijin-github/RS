@@ -1,6 +1,7 @@
 import enum
 
 from datetime import datetime
+from datetime import timedelta
 
 from flask_script import Manager
 from flask_migrate import Migrate, MigrateCommand
@@ -109,6 +110,17 @@ class Restaurant(db.Model):
 
     def __repr__(self):
         return '<Restaurant %r>' % self.title
+
+    def get_available_tables(self, date_time):
+        restaurant_tables = self.restaurant_tables
+        restaurant_booked_table_id_list = []
+        end_time = date_time + timedelta(hours=2)
+        query = (db.session.query(Order)
+                 .filter(Order.order_time >= end_time))
+        for order in query:
+            restaurant_booked_table_id_list.extend([table.id for table in order.order_tables])
+        return [restaurant_tables - restaurant_booked_table_id_list]
+
 
 
 class Table(db.Model):

@@ -1,7 +1,6 @@
 import datetime
 import json
 
-from flask import Flask
 from flask_restful import Resource, Api, reqparse
 from models import User, Country, State, Place, RestaurantCategory, \
             TableCategory, Table, Restaurant, MenuItem, Order, CartItem
@@ -392,8 +391,6 @@ class OrderView(Resource):
             db.session.add(order_obj)
             db.session.commit()
             # Add Menu Items
-            print(args['selected_item'],"LLLL",order_obj.id)
-
             for item in args.selected_item:
                 item = json.loads(item)
                 cart_item_obj = CartItem(order_id=order_obj.id, menu_id=item['item_id'], count=item['item_count'])
@@ -420,5 +417,5 @@ api.add_resource(RestaurantView, '/restaurant/')
 api.add_resource(MenuView, '/menu-items/')
 api.add_resource(OrderView, '/book/')
 
-if __name__ == '__main__':
-    app.run(debug=True)
+if __name__ == "__main__":
+    app.run(debug=True, host='0.0.0.0')
