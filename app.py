@@ -3,12 +3,10 @@ import json
 
 from flask import Flask
 from flask_restful import Resource, Api, reqparse
-from models import User, Country, State, Place, RestaurantCategory, TableCategory, Table, Restaurant, MenuItem, Order
-from flask_sqlalchemy import SQLAlchemy
+from models import User, Country, State, Place, RestaurantCategory, \
+            TableCategory, Table, Restaurant, MenuItem, Order, CartItem
 
-app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///app.db"
-db = SQLAlchemy(app)
+from settings import db, app
 
 api = Api(app)
 
@@ -364,6 +362,7 @@ class OrderView(Resource):
             result['active'] = order.active
             result['status'] = order.status.value
             result['tables'] = [table.id for table in order.order_tables]
+            result['selected_items'] = [[order.id, order.menu.name, order.count] for order in order.order_items]
             output.append(result)
         return output
 
@@ -375,28 +374,32 @@ class OrderView(Resource):
         parser.add_argument("restaurant_id")
         parser.add_argument("spend_hour")
         parser.add_argument('table', action='append')
-        parser.add_argument('selected_items', action='split')
+        parser.add_argument('selected_item', action='append')
         args = parser.parse_args()
         user_exist = User.query.filter_by(email=args['user_email'], user_type='customer').all()
         if not user_exist:
             user = User(password='default', email=args['user_email'], user_type='customer')
             db.session.add(user)
+        try:
+            order_obj = Order(user_email=args['user_email'], mobile=args['mobile'], restaurant_id=args['restaurant_id'],
+                              spend_hour=args['spend_hour'], active=True)
+            for table_id in args.table:
+                table_obj = Table.query.get(int(table_id))
+                order_obj.order_tables.append(table_obj)
+            db.session.add(order_obj)
             db.session.commit()
-        # try:
-        order_obj = Order(user_email=args['user_email'], mobile=args['mobile'], restaurant_id=args['restaurant_id'],
-                          spend_hour=args['spend_hour'], active=True)
-        db.session.add(order_obj)
-        db.session.commit()
-        for table_id in args.table:
-            table_obj = Table.query.get(int(table_id))
-            table_obj.table_orders.append(order_obj)
-        db.session.commit()
+            # Add Menu Items
+            print(args['selected_item'],"LLLL",order_obj.id)
 
-
-        result = {'Item Name': order_obj.id}
-        # except:
-        #     status_code = 404
-        #     result = {'message': 'There is some error'}
+            for item in args.selected_item:
+                item = json.loads(item)
+                cart_item_obj = CartItem(order_id=order_obj.id, menu_id=item['item_id'], count=item['item_count'])
+                db.session.add(cart_item_obj)
+            db.session.commit()
+            result = {'Item Name': order_obj.id}
+        except:
+            status_code = 404
+            result = {'message': 'There is some error'}
         return result, status_code
 
     def put(self):

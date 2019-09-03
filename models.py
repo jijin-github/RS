@@ -2,17 +2,12 @@ import enum
 
 from datetime import datetime
 
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
 from flask_script import Manager
 from flask_migrate import Migrate, MigrateCommand
-
 from sqlalchemy.dialects.mysql import TIME
 
-app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///app.db"
+from settings import db, app
 
-db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
 manager = Manager(app)
@@ -168,7 +163,7 @@ class Order(db.Model):
     restaurant = db.relationship('Restaurant',
                                backref=db.backref('restaurant_orders', lazy=True))
     order_tables = db.relationship('Table', secondary=order_tables, lazy='subquery',
-                           backref=db.backref('table_orders', lazy=True))
+                           backref=db.backref('Orders', lazy=True))
     order_time = db.Column(db.DateTime, nullable=False,
         default=datetime.utcnow)
     spend_hour = db.Column(db.Integer, default=2)
